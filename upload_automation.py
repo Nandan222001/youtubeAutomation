@@ -58,11 +58,14 @@ def add_watermark(input_video, watermark_image, output_video, position="10:10"):
 def generate_thumbnail(input_video, thumbnail_output, time="00:00:05"):
     command = [
         "ffmpeg", "-y", "-ss", time, "-i", input_video,
-        "-vframes", "1", thumbnail_output
+        "-vframes", "1",
+        "-pix_fmt", "yuv420p", 
+        thumbnail_output
     ]
     subprocess.run(command, check=True)
 
-def load_uploaded_files(tracker_file="uploaded_videos.txt"):
+
+def load_uploaded_files(tracker_file="/home/neosoft/Documents/YoutubeAutomation/uploaded_videos.txt"):
     if os.path.exists(tracker_file):
         with open(tracker_file, "r") as f:
             return set(line.strip() for line in f)
@@ -76,7 +79,7 @@ def upload_video(youtube, input_file):
     base_name = Path(input_file).stem
     watermarked_video = f"output/{base_name}_wm.mp4"
     thumbnail = f"output/{base_name}_thumb.jpg"
-    watermark_image = "nktech.png"
+    watermark_image = "/home/neosoft/Documents/YoutubeAutomation/nktech.png"
     playlist_id = "PLxFWU3M8Ur0wLUmAuoCvKzMtmAKS1VuKV"  # Optional
 
     print(f"Processing: {input_file}")
@@ -169,7 +172,7 @@ def main():
     os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"
     api_service_name = "youtube"
     api_version = "v3"
-    client_secrets_file = "testGoogle2.json"
+    client_secrets_file = "/home/neosoft/Documents/YoutubeAutomation/testGoogle.json"
 
     flow = google_auth_oauthlib.flow.InstalledAppFlow.from_client_secrets_file(
         client_secrets_file, scopes)
@@ -177,7 +180,7 @@ def main():
     youtube = googleapiclient.discovery.build(api_service_name, api_version, credentials=credentials)
 
     uploaded = load_uploaded_files()
-    video_folder = "videos"
+    video_folder = "/home/neosoft/Documents/YoutubeAutomation/videos"
 
     for file in sorted(os.listdir(video_folder)):
         if not file.lower().endswith(('.mp4', '.mov', '.avi')):
