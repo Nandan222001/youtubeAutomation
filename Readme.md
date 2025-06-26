@@ -71,9 +71,9 @@ I work with a diverse set of technologies to bring ideas to life. Here are some 
 Here's a glimpse of my GitHub activity and statistics. These are **dynamic** and update regularly!
 
 <p align="center">
-  <img src="https://github-readme-stats.vercel.app/api/top-langs?username=nandan222001&show_icons=true&locale=en&layout=compact&theme=dark&card_width=320" alt="Top Languages" height="180" />
-  <img src="https://github-readme-stats.vercel.app/api?username=nandan222001&show_icons=true&locale=en&theme=dark&card_width=320" alt="GitHub Stats" height="180" />
-  <img src="https://github-readme-streak-stats.herokuapp.com/?user=nandan222001&theme=dark&hide_border=true&card_width=320" alt="GitHub Streak" height="180" />
+  <img src="https://github-readme-stats.vercel.app/api/top-langs?username=nandan222001&show_icons=true&locale=en&layout=compact&theme=dark&card_width=300" alt="Top Languages" height="180" />
+  <img src="https://github-readme-stats.vercel.app/api?username=nandan222001&show_icons=true&locale=en&theme=dark&card_width=300" alt="GitHub Stats" height="180" />
+  <img src="https://github-readme-streak-stats.herokuapp.com/?user=nandan222001&theme=dark&hide_border=true&card_width=300" alt="GitHub Streak" height="180" />
 </p>
 
 *If the images still don't appear right away, try a hard refresh (Ctrl+Shift+R or Cmd+Shift+R) or check back in a few minutes, as GitHub's caching can sometimes take a moment to update.*
