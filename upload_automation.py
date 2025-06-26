@@ -7,7 +7,7 @@ import googleapiclient.discovery
 import googleapiclient.errors
 from googleapiclient.http import MediaFileUpload
 
-scopes = ["https://www.googleapis.com/auth/youtube.upload"]
+scopes = ["https://www.googleapis.com/auth/youtube.upload", "https://www.googleapis.com/auth/youtube.force-ssl", "https://www.googleapis.com/auth/youtube" ]
 
 # Metadata inputs
 motivational_keywords = [
@@ -77,6 +77,7 @@ def upload_video(youtube, input_file):
     watermarked_video = f"output/{base_name}_wm.mp4"
     thumbnail = f"output/{base_name}_thumb.jpg"
     watermark_image = "nktech.png"
+    playlist_id = "PLxFWU3M8Ur0wLUmAuoCvKzMtmAKS1VuKV"  # Optional
 
     print(f"Processing: {input_file}")
     os.makedirs("output", exist_ok=True)
@@ -86,32 +87,81 @@ def upload_video(youtube, input_file):
     generate_thumbnail(watermarked_video, thumbnail)
 
     title, description, tags = generate_video_metadata()
+    keywords_line = ", ".join(tags)
+    full_description = f"{description}\n\nKeywords: {keywords_line}"
 
     request = youtube.videos().insert(
         part="snippet,status",
         body={
             "snippet": {
                 "title": title,
-                "description": description,
+                "description": full_description,
                 "tags": tags,
-                "categoryId": "22"
+                "categoryId": "22",
+                "defaultLanguage": "en",
+                "defaultAudioLanguage": "en"
             },
             "status": {
-                "privacyStatus": "private"
+                "privacyStatus": "public",
+                "publicStatsViewable": True,
+                "selfDeclaredMadeForKids": False,
+                "madeForKids": False,
+                "license": "creativeCommon",
+                "embeddable": True
             }
         },
         media_body=MediaFileUpload(watermarked_video)
     )
     response = request.execute()
-    print(f"Uploaded: {base_name} ✅")
+    video_id = response["id"]
+    print(f"Uploaded: {base_name} ✅ | Video ID: {video_id}")
 
     # Set thumbnail
-    video_id = response["id"]
-    thumbnail_request = youtube.thumbnails().set(
+    youtube.thumbnails().set(
         videoId=video_id,
         media_body=MediaFileUpload(thumbnail)
-    )
-    thumbnail_request.execute()
+    ).execute()
+
+    # Add to playlist
+    if playlist_id:
+        youtube.playlistItems().insert(
+            part="snippet",
+            body={
+                "snippet": {
+                    "playlistId": playlist_id,
+                    "resourceId": {
+                        "kind": "youtube#video",
+                        "videoId": video_id
+                    }
+                }
+            }
+        ).execute()
+        print(f"📺 Added to playlist: {playlist_id}")
+
+    # Post a comment
+    youtube.commentThreads().insert(
+        part="snippet",
+        body={
+            "snippet": {
+                "videoId": video_id,
+                "topLevelComment": {
+                    "snippet": {
+                        "textOriginal": "🔥 What did you think about this quote? Drop your thoughts below!"
+                    }
+                }
+            }
+        }
+    ).execute()
+
+    # ✅ Delete original file after upload
+    try:
+        os.remove(input_file)
+        os.remove(watermarked_video)
+        os.remove(thumbnail)
+
+        print(f"🗑️ Deleted original file: {input_file}")
+    except Exception as e:
+        print(f"⚠️ Could not delete file: {e}")
 
     return base_name
 
