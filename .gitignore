@@ -1,8 +1,6 @@
-
 testGoogle2.json
-
 /videos
-
-testGoogle.json
-
 /output
+cron.log
+testGoogle.json
+/token.pickle
