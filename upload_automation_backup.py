@@ -6,9 +6,6 @@ import google_auth_oauthlib.flow
 import googleapiclient.discovery
 import googleapiclient.errors
 from googleapiclient.http import MediaFileUpload
-from google.auth.transport.requests import Request
-from google.oauth2.credentials import Credentials
-import pickle
 
 scopes = ["https://www.googleapis.com/auth/youtube.upload", "https://www.googleapis.com/auth/youtube.force-ssl", "https://www.googleapis.com/auth/youtube" ]
 
@@ -46,6 +43,7 @@ def generate_video_metadata():
     full_description = f"{description}\n\n{hashtags}"
     return title, full_description, tags
 
+
 def add_watermark(input_video, watermark_image, output_video, position="10:10"):
     command = [
         "ffmpeg", "-y", "-i", input_video, "-i", watermark_image,
@@ -53,20 +51,25 @@ def add_watermark(input_video, watermark_image, output_video, position="10:10"):
         f"[1:v]scale=400:-1[wm];[0:v][wm]overlay={position}",
         output_video
     ]
-    print("Running command:", " ".join(command))
+    print("Running command:", " ".join(command))  # 👈 Debug line
     try:
         subprocess.run(command, check=True, stderr=subprocess.PIPE)
     except subprocess.CalledProcessError as e:
         print("❌ FFmpeg error:", e.stderr.decode())
 
+
+
+
 def generate_thumbnail(input_video, thumbnail_output, time="00:00:05"):
     command = [
         "ffmpeg", "-y", "-ss", time, "-i", input_video,
         "-vframes", "1",
-        "-pix_fmt", "yuv420p",
+        "-pix_fmt", "yuv420p",  # 👈 Add this
         thumbnail_output
     ]
     subprocess.run(command, check=True)
+
+
 
 def load_uploaded_files(tracker_file="/home/neosoft/Documents/YoutubeAutomation/uploaded_videos.txt"):
     if os.path.exists(tracker_file):
@@ -78,66 +81,12 @@ def save_uploaded_file(file_name, tracker_file="uploaded_videos.txt"):
     with open(tracker_file, "a") as f:
         f.write(file_name + "\n")
 
-def get_authenticated_service():
-    """Get authenticated YouTube service with proper credential handling"""
-    credentials = None
-    token_file = "/home/neosoft/Documents/YoutubeAutomation/token.pickle"
-    client_secrets_file = "/home/neosoft/Documents/YoutubeAutomation/testGoogle.json"
-    
-    # Load existing credentials if they exist
-    if os.path.exists(token_file):
-        with open(token_file, 'rb') as token:
-            credentials = pickle.load(token)
-    
-    # If there are no valid credentials available, get new ones
-    if not credentials or not credentials.valid:
-        if credentials and credentials.expired and credentials.refresh_token:
-            # Try to refresh expired credentials
-            try:
-                credentials.refresh(Request())
-                print("✅ Refreshed existing credentials")
-            except Exception as e:
-                print(f"⚠️ Could not refresh credentials: {e}")
-                credentials = None
-        
-        if not credentials:
-            # Need to get new credentials
-            print("🔐 No valid credentials found. Starting OAuth flow...")
-            flow = google_auth_oauthlib.flow.InstalledAppFlow.from_client_secrets_file(
-                client_secrets_file, scopes)
-            
-            # Try different authentication methods
-            try:
-                # Method 1: Try console-based auth first
-                credentials = flow.run_console()
-                print("✅ Authentication successful via console")
-            except Exception as console_error:
-                print(f"⚠️ Console auth failed: {console_error}")
-                try:
-                    # Method 2: Try local server with specific port
-                    credentials = flow.run_local_server(port=8080, open_browser=False)
-                    print("✅ Authentication successful via local server")
-                    print("🌐 Please open this URL in your browser and complete authentication:")
-                    print(f"http://localhost:8080")
-                except Exception as server_error:
-                    print(f"❌ Local server auth also failed: {server_error}")
-                    print("Please try running this script on a machine with a web browser available.")
-                    return None
-        
-        # Save credentials for future use
-        with open(token_file, 'wb') as token:
-            pickle.dump(credentials, token)
-            print("💾 Credentials saved for future use")
-    
-    # Build and return the YouTube service
-    return googleapiclient.discovery.build("youtube", "v3", credentials=credentials)
-
 def upload_video(youtube, input_file):
     base_name = Path(input_file).stem
     watermarked_video = f"output/{base_name}_wm.mp4"
     thumbnail = f"output/{base_name}_thumb.jpg"
     watermark_image = "/home/neosoft/Documents/YoutubeAutomation/nktech.png"
-    playlist_id = "PLxFWU3M8Ur0wLUmAuoCvKzMtmAKS1VuKV"
+    playlist_id = "PLxFWU3M8Ur0wLUmAuoCvKzMtmAKS1VuKV"  # Optional
 
     print(f"Processing: {input_file}")
     os.makedirs("output", exist_ok=True)
@@ -213,12 +162,13 @@ def upload_video(youtube, input_file):
         }
     ).execute()
 
-    # Delete files after upload
+    # ✅ Delete original file after upload
     try:
         os.remove(input_file)
         os.remove(watermarked_video)
         os.remove(thumbnail)
-        print(f"🗑️ Deleted files: {input_file}")
+
+        print(f"🗑️ Deleted original file: {input_file}")
     except Exception as e:
         print(f"⚠️ Could not delete file: {e}")
 
@@ -226,12 +176,14 @@ def upload_video(youtube, input_file):
 
 def main():
     os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"
-    
-    # Get authenticated service
-    youtube = get_authenticated_service()
-    if not youtube:
-        print("❌ Failed to authenticate. Exiting.")
-        return
+    api_service_name = "youtube"
+    api_version = "v3"
+    client_secrets_file = "/home/neosoft/Documents/YoutubeAutomation/testGoogle.json"
+
+    flow = google_auth_oauthlib.flow.InstalledAppFlow.from_client_secrets_file(
+        client_secrets_file, scopes)
+    credentials = flow.run_local_server(port=0)
+    youtube = googleapiclient.discovery.build(api_service_name, api_version, credentials=credentials)
 
     uploaded = load_uploaded_files()
     video_folder = "/home/neosoft/Documents/YoutubeAutomation/videos"
@@ -249,10 +201,13 @@ def main():
         try:
             uploaded_name = upload_video(youtube, full_path)
             save_uploaded_file(uploaded_name)
-            break  # Stop after uploading one video
+            break  # ✅ Stop after uploading one video
         except Exception as e:
             print(f"❌ Error uploading {file}: {e}")
-            break
+            break  # Stop here, don’t try next video today
+
+
+
 
 if __name__ == "__main__":
     main()

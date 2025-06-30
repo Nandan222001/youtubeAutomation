@@ -1,0 +1,68 @@
+#!/usr/bin/env python3
+"""
+Simple script to check and verify YouTube API credentials
+"""
+import os
+import pickle
+from google.oauth2.credentials import Credentials
+
+def check_credentials():
+    token_file = "/home/neosoft/Documents/YoutubeAutomation/token.pickle"
+    
+    if not os.path.exists(token_file):
+        print("❌ No credential file found at:", token_file)
+        return False
+    
+    try:
+        with open(token_file, 'rb') as token:
+            credentials = pickle.load(token)
+        
+        print("✅ Credential file loaded successfully")
+        print("\n📋 Credential Details:")
+        print(f"  - Token: {'✅ Present' if credentials.token else '❌ Missing'}")
+        print(f"  - Refresh Token: {'✅ Present' if credentials.refresh_token else '❌ Missing'}")
+        print(f"  - Client ID: {'✅ Present' if credentials.client_id else '❌ Missing'}")
+        print(f"  - Client Secret: {'✅ Present' if credentials.client_secret else '❌ Missing'}")
+        print(f"  - Token URI: {credentials.token_uri if credentials.token_uri else '❌ Missing'}")
+        print(f"  - Valid: {'✅ Yes' if credentials.valid else '❌ No'}")
+        print(f"  - Expired: {'❌ Yes' if credentials.expired else '✅ No'}")
+        
+        # Check if we have all required fields for refresh
+        required_fields = [
+            credentials.refresh_token,
+            credentials.token_uri,
+            credentials.client_id,
+            credentials.client_secret
+        ]
+        
+        if all(required_fields):
+            print("\n✅ All required fields present for token refresh")
+            return True
+        else:
+            print("\n❌ Missing required fields for token refresh")
+            print("💡 You need to re-authenticate to get a proper refresh token")
+            return False
+            
+    except Exception as e:
+        print(f"❌ Error loading credentials: {e}")
+        return False
+
+def delete_credentials():
+    token_file = "/home/neosoft/Documents/YoutubeAutomation/token.pickle"
+    if os.path.exists(token_file):
+        os.remove(token_file)
+        print("🗑️ Deleted credential file. You'll need to re-authenticate.")
+    else:
+        print("ℹ️ No credential file to delete.")
+
+if __name__ == "__main__":
+    print("🔍 YouTube API Credential Checker\n")
+    
+    if check_credentials():
+        print("\n🎉 Credentials look good! Your script should work.")
+    else:
+        print("\n🔧 Credentials need to be fixed.")
+        response = input("\nDelete existing credentials and force re-authentication? (y/N): ")
+        if response.lower() == 'y':
+            delete_credentials()
+            print("\n🔄 Run your main script again to re-authenticate.")
